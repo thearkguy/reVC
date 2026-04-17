@@ -68,6 +68,7 @@ Some of them can be toggled at runtime, some cannot.
 * Re-enabled money messages.
 * Enabled loading screens.
 * Fixed on-foot camera modes. Intermediate zoom now works properly.
+* Enabled mission replay. Allowing the player to immediately restart a failed mission.
 * ...
 
 ## To-Do
