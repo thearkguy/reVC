@@ -3,6 +3,18 @@
 [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fmrxenginner%2FreVC%2Fbadge%3Fref%3Dmiami&style=flat)](https://actions-badge.atrox.dev/mrxenginner/reVC/goto?ref=miami)
 <a href="https://discord.gg/RFNbjsUMGg"><img src="https://img.shields.io/badge/discord-join-7289DA.svg?logo=discord&longCache=true&style=flat" /></a>
 
+
+## Change landmarks
+
+Any changes I've made have landmarks to easily find them in the code:
+
+#AutoSave       = Anything related to autosave.
+#Blood droplets = Anything related to blood droplets on the screen.
+#Input switch   = Anything related to the automatic switching of input.
+#Camera mode    = Related to the camera modes (when pressing "V" or "Select").
+#AudioFix       = All audio fixes.
+
+
 ## Intro
 
 In this repository you'll find the fully reversed source code for GTA VC ([miami](https://github.com/mrxenginner/reVC/tree/miami/) branch).
