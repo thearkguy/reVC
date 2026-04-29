@@ -8,10 +8,15 @@
 
 Any changes I've made have landmarks to easily find them in the code:
 
+
 #AutoSave       = Anything related to autosave.
+
 #Blood droplets = Anything related to blood droplets on the screen.
+
 #Input switch   = Anything related to the automatic switching of input.
+
 #Camera mode    = Related to the camera modes (when pressing "V" or "Select").
+
 #AudioFix       = All audio fixes.
 
 
