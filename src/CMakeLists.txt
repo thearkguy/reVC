@@ -20,24 +20,14 @@ header_directories(${PROJECT}_INCLUDES)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/extras/GitSHA1.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/extras/GitSHA1.cpp" @ONLY)
 list(APPEND ${PROJECT}_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/extras/GitSHA1.cpp")
 
-if(NOT ANDROID)
-    add_executable(${EXECUTABLE} WIN32 ${${PROJECT}_SOURCES})
-elseif(ANDROID)
-    add_library(${EXECUTABLE} SHARED ${${PROJECT}_SOURCES})
-endif()
+add_executable(${EXECUTABLE} WIN32
+    ${${PROJECT}_SOURCES}
+)
 
 target_link_libraries(${EXECUTABLE} PRIVATE
     librw::librw
     Threads::Threads
 )
-
-if(ANDROID)
-    target_link_libraries(${EXECUTABLE} PRIVATE
-            log
-            GLESv3
-            OpenSLES
-    )
-endif()
 
 target_include_directories(${EXECUTABLE}
     PRIVATE
@@ -59,44 +49,49 @@ if(LIBRW_PLATFORM_D3D9)
     )
 endif()
 
-if(ANDROID)
-    target_compile_definitions(${EXECUTABLE} PRIVATE
-            ANDROID
-            _ANDROID
-            LINUX
-            _LINUX
-            POSIX
-            _POSIX
-            NO_HOOK_MALLOC
-            AL_LIBTYPE_STATIC
-            GNUC
-            RW_GL3
-            LIBRW_SDL2
-            LIBRW
-            AUDIO_OAL
-            USE_OUR_VERSIONING
-            HAVE_EFFICIENT_UNALIGNED_ACCESS
-            VECTORIZE_SINCOS
-        )
-else()
-    target_compile_definitions(${EXECUTABLE} PRIVATE CMAKE_BUILD)
-    target_compile_definitions(${EXECUTABLE} PRIVATE USE_OUR_VERSIONING)
-endif()
+target_compile_definitions(${EXECUTABLE} PRIVATE CMAKE_BUILD)
+target_compile_definitions(${EXECUTABLE} PRIVATE USE_OUR_VERSIONING)
 
 if(${PROJECT}_AUDIO STREQUAL "OAL")
-    find_package(OpenAL REQUIRED)
-    if(TARGET OpenAL::OpenAL)
+    # 1) Prefer config package if available
+    find_package(OpenAL CONFIG QUIET)
+    if(OpenAL_FOUND AND TARGET OpenAL::OpenAL)
         target_link_libraries(${EXECUTABLE} PRIVATE OpenAL::OpenAL)
+        # If your OpenAL package is static and uses SDL backend, also link SDL2
+        if(DEFINED SDL2_LIBRARY AND EXISTS "${SDL2_LIBRARY}")
+            target_link_libraries(${EXECUTABLE} PRIVATE "${SDL2_LIBRARY}")
+        endif()
+
+    # 2) Cross-build/manual override path (e.g. Switch CI)
+    elseif(DEFINED OPENAL_LIBRARY AND DEFINED OPENAL_INCLUDE_DIR
+           AND EXISTS "${OPENAL_LIBRARY}" AND EXISTS "${OPENAL_INCLUDE_DIR}")
+        target_include_directories(${EXECUTABLE} PRIVATE "${OPENAL_INCLUDE_DIR}")
+
+        # IMPORTANT: order matters for static libs: OpenAL first, SDL2 after
+        target_link_libraries(${EXECUTABLE} PRIVATE "${OPENAL_LIBRARY}")
+        if(DEFINED SDL2_LIBRARY AND EXISTS "${SDL2_LIBRARY}")
+            target_link_libraries(${EXECUTABLE} PRIVATE "${SDL2_LIBRARY}")
+        endif()
+
+        if(DEFINED OPENAL_DEFINITIONS AND NOT OPENAL_DEFINITIONS STREQUAL "")
+            target_compile_definitions(${EXECUTABLE} PRIVATE ${OPENAL_DEFINITIONS})
+        endif()
+
+    # 3) Fallback to module mode
     else()
+        find_package(OpenAL MODULE REQUIRED)
         target_include_directories(${EXECUTABLE} PRIVATE ${OPENAL_INCLUDE_DIR})
         target_link_libraries(${EXECUTABLE} PRIVATE ${OPENAL_LIBRARY})
-        target_compile_definitions(${EXECUTABLE} PRIVATE ${OPENAL_DEFINITIONS})
+        if(DEFINED SDL2_LIBRARY AND EXISTS "${SDL2_LIBRARY}")
+            target_link_libraries(${EXECUTABLE} PRIVATE "${SDL2_LIBRARY}")
+        endif()
+
+        if(OPENAL_DEFINITIONS)
+            target_compile_definitions(${EXECUTABLE} PRIVATE ${OPENAL_DEFINITIONS})
+        endif()
     endif()
+
     target_compile_definitions(${EXECUTABLE} PRIVATE AUDIO_OAL)
-elseif(${PROJECT}_AUDIO STREQUAL "MSS")
-    find_package(MilesSDK REQUIRED)
-    target_compile_definitions(${EXECUTABLE} PRIVATE AUDIO_MSS)
-    target_link_libraries(${EXECUTABLE} PRIVATE MilesSDK::MilesSDK)
 endif()
 
 find_package(mpg123 REQUIRED)
@@ -142,26 +137,6 @@ if(${PROJECT}_WITH_ASAN)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    if(ANDROID)
-        target_compile_options(${EXECUTABLE}
-            PRIVATE
-                -pthread
-                -std=c++11
-                -fno-strict-aliasing
-                -fexceptions
-                -Wcast-align
-                -Wuninitialized
-                -Winit-self
-                -Wstrict-aliasing
-                -Wno-reorder
-                -Wno-unknown-pragmas
-                -Wno-unused-function
-                -Wno-unused-but-set-variable
-                -Wno-unused-value
-                -Wno-unused-command-line-argument
-                -faligned-new
-        )
-    endif()
     target_compile_options(${EXECUTABLE}
         PRIVATE
             "-Wall"
