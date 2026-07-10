@@ -2499,9 +2499,16 @@ void CapturePad(RwInt32 padID)
 		// In case connected gamepad doesn't have L-R trigger axes.
 		ControlsManager.m_NewState.mappedButtons[15] = ControlsManager.m_NewState.mappedButtons[16] = 0;
 	}
-
-	ControlsManager.m_NewState.buttons = (uint8*)buttons;
-	ControlsManager.m_NewState.numButtons = numButtons;
+	
+	const int maxButtons = (int)sizeof(ControlsManager.m_NewState.buttons);
+	const int copyButtons = numButtons < maxButtons ? numButtons : maxButtons;
+	
+	memset(ControlsManager.m_NewState.buttons, 0, sizeof(ControlsManager.m_NewState.buttons));
+	if (buttons != nil && copyButtons > 0)
+	    memcpy(ControlsManager.m_NewState.buttons, buttons, copyButtons);
+	
+	ControlsManager.m_NewState.numButtons = copyButtons;
+	
 	ControlsManager.m_NewState.id = glfwPad;
 	ControlsManager.m_NewState.isGamepad = glfwGetGamepadState(glfwPad, &gamepadState);
 	if (ControlsManager.m_NewState.isGamepad) {
