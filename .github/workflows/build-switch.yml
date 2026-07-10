@@ -187,7 +187,7 @@ jobs:
           cpack -G ZIP
 
       - name: "Archive binary package (github artifacts)"
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: "switch-gl3"
           path: build-switch/*.zip
