@@ -120,47 +120,55 @@ jobs:
           else
             echo "vendor/librw/src/gl/shaders not found — skipping librw shader build"
           fi
-
+      
       - name: Generate reVC shader includes
         shell: bash
         run: |
           set -euxo pipefail
           mkdir -p shaders/obj
-          mkdir -p src/extras/shaders/obj  # ADD THIS LINE
-
-          # Ensure all shader scripts are executable before running them
+          mkdir -p src/extras/shaders/obj
+      
           chmod +x shaders/*.sh 2>/dev/null || true
           chmod +x src/extras/shaders/*.sh 2>/dev/null || true
-
-          # Copy all generated librw shaders
+      
+          # Copy generated librw shaders
           if ls vendor/librw/src/gl/shaders/*.inc 1> /dev/null 2>&1; then
             cp -f vendor/librw/src/gl/shaders/*.inc shaders/obj/
           fi
-
-          # Build reVC-specific shaders
+      
+          # Existing shader build
           if [ -f "shaders/Makefile" ]; then
-            cd shaders
-            make -j$(nproc)
-            cd ..
+            (cd shaders && make -j"$(nproc)")
           fi
-
-          # Verify all required shader files exist
+      
+          # NEW: build extra shaders that produce neoVehicle_*.inc, im2d_*.inc, etc.
+          if [ -d "src/extras/shaders" ]; then
+            if [ -f "src/extras/shaders/Makefile" ] || [ -f "src/extras/shaders/makefile" ]; then
+              (cd src/extras/shaders && make -j"$(nproc)")
+            elif [ -x "src/extras/shaders/make_glsl.sh" ]; then
+              (cd src/extras/shaders && ./make_glsl.sh)
+            fi
+      
+            # Stage generated .inc files where the build expects them
+            if ls src/extras/shaders/obj/*.inc 1> /dev/null 2>&1; then
+              cp -f src/extras/shaders/obj/*.inc shaders/obj/
+            fi
+          fi
+      
           required_shaders=(
             "shaders/obj/neoVehicle_frag.inc"
             "shaders/obj/im2d_vert.inc"
             "shaders/obj/im2d_UV2_vert.inc"
           )
-
+      
           for shader in "${required_shaders[@]}"; do
             if [ ! -f "$shader" ]; then
               echo "ERROR: Missing required shader: $shader"
               ls -lh shaders/obj/*.inc 2>/dev/null || echo "No .inc files found"
+              ls -lh src/extras/shaders/obj/*.inc 2>/dev/null || true
               exit 1
             fi
-          done
-
-          echo "All required shaders generated successfully:"
-          ls -lh shaders/obj/*.inc
+          done          
 
       - name: "Build files"
         run: |
