@@ -2108,41 +2108,80 @@ void CPad::DoCheats(void)
 
 void CPad::DoCheats(int16 unk)
 {
-#ifdef GTA_PS2_STUFF
-	if ( GetTriangleJustDown() )
+#if defined(GTA_PS2_STUFF) || defined(GTA_PC_CONTROLS)
+#ifdef GTA_PC_CONTROLS
+	auto GetJoyButtonJustDownLocal = [](int32 button) -> bool {
+		int32 mapId = -1;
+		switch (button) {
+		case 1:  mapId = 1;  break; // Circle -> B
+		case 2:  mapId = 0;  break; // Cross -> A
+		case 3:  mapId = 2;  break; // Square -> X
+		case 4:  mapId = 3;  break; // Triangle -> Y
+		case 5:  mapId = 15; break; // L2 -> 15
+		case 6:  mapId = 16; break; // R2 -> 16
+		case 7:  mapId = 4;  break; // L1 -> Left Bumper
+		case 8:  mapId = 5;  break; // R1 -> Right Bumper
+		case 9:  mapId = 6;  break; // Select -> Back
+		case 10: mapId = 8;  break; // L3 -> Left Thumb
+		case 11: mapId = 9;  break; // R3 -> Right Thumb
+		case 12: mapId = 7;  break; // Start -> Start
+		case 13: mapId = 10; break; // DPad Up
+		case 14: mapId = 11; break; // DPad Right
+		case 15: mapId = 12; break; // DPad Down
+		case 16: mapId = 13; break; // DPad Left
+		default: return false;
+		}
+
+		if (mapId == -1) return false;
+
+		if (ControlsManager.m_NewState.isGamepad) {
+			return ControlsManager.m_NewState.mappedButtons[mapId] && !ControlsManager.m_OldState.mappedButtons[mapId];
+		} else {
+			int32 rawBtn = button - 1;
+			if (rawBtn >= 0 && rawBtn < 32) {
+				return ControlsManager.m_NewState.buttons[rawBtn] && !ControlsManager.m_OldState.buttons[rawBtn];
+			}
+		}
+		return false;
+	};
+#else
+	auto GetJoyButtonJustDownLocal = [](int32 button) -> bool { return false; };
+#endif
+
+	if ( GetTriangleJustDown() || GetJoyButtonJustDownLocal(4) )
 		AddToCheatString('T');
 
-	if ( GetCircleJustDown() )
+	if ( GetCircleJustDown() || GetJoyButtonJustDownLocal(1) )
 		AddToCheatString('C');
 
-	if ( GetCrossJustDown() )
+	if ( GetCrossJustDown() || GetJoyButtonJustDownLocal(2) )
 		AddToCheatString('X');
 
-	if ( GetSquareJustDown() )
+	if ( GetSquareJustDown() || GetJoyButtonJustDownLocal(3) )
 		AddToCheatString('S');
 
-	if ( GetDPadUpJustDown() )
+	if ( GetDPadUpJustDown() || GetJoyButtonJustDownLocal(13) )
 		AddToCheatString('U');
 
-	if ( GetDPadDownJustDown() )
+	if ( GetDPadDownJustDown() || GetJoyButtonJustDownLocal(15) )
 		AddToCheatString('D');
 
-	if ( GetDPadLeftJustDown() )
+	if ( GetDPadLeftJustDown() || GetJoyButtonJustDownLocal(16) )
 		AddToCheatString('L');
 
-	if ( GetDPadRightJustDown() )
+	if ( GetDPadRightJustDown() || GetJoyButtonJustDownLocal(14) )
 		AddToCheatString('R');
 
-	if ( GetLeftShoulder1JustDown() )
+	if ( GetLeftShoulder1JustDown() || GetJoyButtonJustDownLocal(7) )
 		AddToCheatString('1');
 
-	if ( GetLeftShoulder2JustDown() )
+	if ( GetLeftShoulder2JustDown() || GetJoyButtonJustDownLocal(5) )
 		AddToCheatString('2');
 
-	if ( GetRightShoulder1JustDown() )
+	if ( GetRightShoulder1JustDown() || GetJoyButtonJustDownLocal(8) )
 		AddToCheatString('3');
 
-	if ( GetRightShoulder2JustDown() )
+	if ( GetRightShoulder2JustDown() || GetJoyButtonJustDownLocal(6) )
 		AddToCheatString('4');
 #endif
 }
