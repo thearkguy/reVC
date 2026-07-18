@@ -63,6 +63,10 @@ void LoadINIControllerSettings();
 void SaveINIControllerSettings();
 #endif
 
+#ifdef __SWITCH__
+extern int g_ActiveSwitchOperationMode;
+#endif
+
 #ifdef NEW_RENDERER
 extern bool gbNewRenderer;
 bool FredIsInFirstPersonCam(void);

@@ -2,6 +2,10 @@
 #include "common.h"
 #include <rpskin.h>
 
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
+
 #include "Timecycle.h"
 #include "skeleton.h"
 #include "Debug.h"
@@ -478,8 +482,14 @@ CameraSize(RwCamera * camera, RwRect * rect,
 		RwRect              origSize = { 0, 0, 0, 0 };	// FIX just to make the compier happy
 		RwV2d               vw;
 
+#ifdef __SWITCH__
+		videoMode.width = appletGetOperationMode() == AppletOperationMode_Console ? 1920 : 1280;
+		videoMode.height = appletGetOperationMode() == AppletOperationMode_Console ? 1080 : 720;
+		videoMode.flags = rwVIDEOMODEEXCLUSIVE;
+#else
 		RwEngineGetVideoModeInfo(&videoMode,
 								 RwEngineGetCurrentVideoMode());
+#endif
 
 		origSize.w  = RwRasterGetWidth(RwCameraGetRaster(camera));
 		origSize.h = RwRasterGetHeight(RwCameraGetRaster(camera));

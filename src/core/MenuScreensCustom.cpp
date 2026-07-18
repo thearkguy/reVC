@@ -96,7 +96,7 @@
 	#define INVERT_PAD_SELECTOR
 #endif
 
-#ifdef GAMEPAD_MENU
+#if defined(GAMEPAD_MENU) && !defined(__SWITCH__)
 	#define SELECT_CONTROLLER_TYPE  MENUACTION_CFO_SELECT, "FEC_TYP", { new CCFOSelect((int8*)&FrontEndMenuManager.m_PrefsControllerType, "Controller", "Type", controllerTypes, ARRAY_SIZE(controllerTypes), false, ControllerTypeAfterChange) }, 0, 0, MENUALIGN_LEFT,
 #else
 	#define SELECT_CONTROLLER_TYPE
@@ -708,6 +708,8 @@ CMenuScreenCustom aScreens[] = {
 		INVERT_PAD_SELECTOR
 		MENUACTION_CTRLVIBRATION,	"FEC_VIB", { nil, SAVESLOT_NONE, MENUPAGE_CONTROLLER_SETTINGS }, 0, 0, MENUALIGN_LEFT,
 		SELECT_CONTROLLER_TYPE
+		MENUACTION_CFO_SELECT,		"FEC_GIV", { new CCFOSelect((int8*)&CPad::bInvertGyroVertically, "Controller", "InvertGyroVertically", off_on, 2, false) }, 0, 0, MENUALIGN_LEFT,
+		MENUACTION_CFO_SLIDER,		"FEC_GSE", { new CCFOSlider(&CPad::fGyroSensitivity, "Controller", "GyroSensitivity", 0.1f, 3.0f, nil) }, 0, 0, MENUALIGN_LEFT,
 		MENUACTION_GOBACK,		"FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE }, 0, 0, MENUALIGN_LEFT,
 	},
 #endif

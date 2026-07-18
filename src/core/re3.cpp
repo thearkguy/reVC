@@ -197,7 +197,22 @@ CustomFrontendOptionsPopulate(void)
 #define MINI_CASE_SENSITIVE
 #include "ini.h"
 
-mINI::INIFile ini("reVC.ini");
+#ifdef __SWITCH__
+int g_ActiveSwitchOperationMode = -1;
+#endif
+
+const char* GetINIPath()
+{
+#ifdef __SWITCH__
+	if (g_ActiveSwitchOperationMode == 0)
+		return "reVC_handheld.ini";
+	else
+		return "reVC_docked.ini";
+#else
+	return "reVC.ini";
+#endif
+}
+
 mINI::INIStructure cfg;
 
 bool ReadIniIfExists(const char *cat, const char *key, uint32 *out)
@@ -479,11 +494,13 @@ void SaveINIControllerSettings()
 #endif
 	StoreIni("Controller", "PadButtonsInited", ControlsManager.ms_padButtonsInited);
 
+	mINI::INIFile ini(GetINIPath());
 	ini.write(cfg);
 }
 
 bool LoadINISettings()
 {
+	mINI::INIFile ini(GetINIPath());
 	if (!ini.read(cfg))
 		return false;
 
@@ -496,11 +513,17 @@ bool LoadINISettings()
 #else
 	ReadIniIfExists("Graphics", "VideoMode", &FrontEndMenuManager.m_nDisplayVideoMode);
 #endif
+#ifdef __SWITCH__
+	FrontEndMenuManager.m_nPrefsWidth = g_ActiveSwitchOperationMode == 0 ? 1280 : 1920;
+	FrontEndMenuManager.m_nPrefsHeight = g_ActiveSwitchOperationMode == 0 ? 720 : 1080;
+#endif
 	ReadIniIfExists("Controller", "HeadBob1stPerson", &TheCamera.m_bHeadBob);
 	ReadIniIfExists("Controller", "HorizantalMouseSens", &TheCamera.m_fMouseAccelHorzntl);
 	ReadIniIfExists("Controller", "InvertMouseVertically", &MousePointerStateHelper.bInvertVertically);
 	ReadIniIfExists("Controller", "DisableMouseSteering", &CVehicle::m_bDisableMouseSteering);
 	ReadIniIfExists("Controller", "Vibration", &FrontEndMenuManager.m_PrefsUseVibration);
+	ReadIniIfExists("Controller", "InvertGyroVertically", &CPad::bInvertGyroVertically);
+	ReadIniIfExists("Controller", "GyroSensitivity", &CPad::fGyroSensitivity);
 	ReadIniIfExists("Audio", "SfxVolume", &FrontEndMenuManager.m_PrefsSfxVolume);
 	ReadIniIfExists("Audio", "MusicVolume", &FrontEndMenuManager.m_PrefsMusicVolume);
 	ReadIniIfExists("Audio", "MP3BoostVolume", &FrontEndMenuManager.m_PrefsMP3BoostVolume);
@@ -597,8 +620,13 @@ bool LoadINISettings()
 void SaveINISettings()
 {
 #ifdef IMPROVED_VIDEOMODE
+#ifdef __SWITCH__
+	StoreIni("VideoMode", "Width", g_ActiveSwitchOperationMode == 0 ? 1280 : 1920);
+	StoreIni("VideoMode", "Height", g_ActiveSwitchOperationMode == 0 ? 720 : 1080);
+#else
 	StoreIni("VideoMode", "Width", FrontEndMenuManager.m_nPrefsWidth);
 	StoreIni("VideoMode", "Height", FrontEndMenuManager.m_nPrefsHeight);
+#endif
 	StoreIni("VideoMode", "Depth", FrontEndMenuManager.m_nPrefsDepth);
 	StoreIni("VideoMode", "Subsystem", FrontEndMenuManager.m_nPrefsSubsystem);
 	// Windowed mode is loaded below in CUSTOM_FRONTEND_OPTIONS section
@@ -610,6 +638,8 @@ void SaveINISettings()
 	StoreIni("Controller", "InvertMouseVertically", MousePointerStateHelper.bInvertVertically);
 	StoreIni("Controller", "DisableMouseSteering", CVehicle::m_bDisableMouseSteering);
 	StoreIni("Controller", "Vibration", FrontEndMenuManager.m_PrefsUseVibration);
+	StoreIni("Controller", "InvertGyroVertically", CPad::bInvertGyroVertically);
+	StoreIni("Controller", "GyroSensitivity", CPad::fGyroSensitivity);
 	StoreIni("Audio", "SfxVolume", FrontEndMenuManager.m_PrefsSfxVolume);
 	StoreIni("Audio", "MusicVolume", FrontEndMenuManager.m_PrefsMusicVolume);
 	StoreIni("Audio", "MP3BoostVolume", FrontEndMenuManager.m_PrefsMP3BoostVolume);
@@ -682,6 +712,7 @@ void SaveINISettings()
 	}
 #endif
 
+	mINI::INIFile ini(GetINIPath());
 	ini.write(cfg);
 }
 

@@ -331,6 +331,10 @@ psNativeTextureSupport(void)
  */
 
 #ifdef __SWITCH__
+#include "Renderer.h"
+
+static HidNpadIdType SwitchActiveNpadId = HidNpadIdType_Handheld;
+static AppletOperationMode lastSwitchOperationMode = AppletOperationMode_Handheld;
 
 static HidVibrationValue SwitchVibrationValues[2];
 static HidVibrationDeviceHandle SwitchVibrationDeviceHandles[2][2];
@@ -367,7 +371,7 @@ static void _psHandleVibration()
 {
 	padUpdate(&SwitchPad);
 
-	uint8 target_device = padIsHandheld(&SwitchPad) ? 0 : 1;
+	uint8 target_device = (SwitchActiveNpadId == HidNpadIdType_Handheld) ? 0 : 1;
 
 	if(R_SUCCEEDED(HidInitializationResult[target_device])) {
 		CPad* pad = CPad::GetPad(0);
@@ -2117,6 +2121,38 @@ main(int argc, char *argv[])
 		while( !RsGlobal.quit && !FrontEndMenuManager.m_bWantToRestart && !glfwWindowShouldClose(PSGLOBAL(window)))
 #endif
 		{
+#ifdef __SWITCH__
+			AppletOperationMode opMode = appletGetOperationMode();
+			if (opMode != lastSwitchOperationMode) {
+				SaveINISettings();
+				SaveINIControllerSettings();
+
+				lastSwitchOperationMode = opMode;
+				g_ActiveSwitchOperationMode = (opMode == AppletOperationMode_Console) ? 1 : 0;
+
+				LoadINISettings();
+				LoadINIControllerSettings();
+
+				int newWidth = (g_ActiveSwitchOperationMode == 1) ? 1920 : 1280;
+				int newHeight = (g_ActiveSwitchOperationMode == 1) ? 1080 : 720;
+				RsGlobal.maximumWidth = newWidth;
+				RsGlobal.maximumHeight = newHeight;
+				RsGlobal.width = newWidth;
+				RsGlobal.height = newHeight;
+
+				glfwSetWindowSize(PSGLOBAL(window), newWidth, newHeight);
+
+				RwRect r;
+				r.x = r.y = 0;
+				r.w = newWidth;
+				r.h = newHeight;
+				RsEventHandler(rsCAMERASIZE, &r);
+
+				CRenderer::ms_lodDistScale = FrontEndMenuManager.m_PrefsLOD;
+				DMAudio.SetMusicMasterVolume(FrontEndMenuManager.m_PrefsMusicVolume);
+				DMAudio.SetEffectsMasterVolume(FrontEndMenuManager.m_PrefsSfxVolume);
+			}
+#endif
 			glfwPollEvents();
 #ifdef GET_KEYBOARD_INPUT_FROM_X11
 			checkKeyPresses();
@@ -2571,6 +2607,54 @@ void CapturePad(RwInt32 padID)
 
 		if ( Abs(rightStickPos.y) > 0.3f )
 			pad->PCTempJoyState.RightStickY = (int32)(rightStickPos.y * 128.0f);
+
+#ifdef __SWITCH__
+		static bool gyroInitialized[5] = {false};
+		static HidSixAxisSensorHandle gyroHandles[5];
+		
+		float gyro_accum_x = 0.0f;
+		float gyro_accum_y = 0.0f;
+		bool has_gyro_input = false;
+
+		HidNpadIdType npad_ids[] = {
+			HidNpadIdType_Handheld,
+			HidNpadIdType_No1,
+			HidNpadIdType_No2,
+			HidNpadIdType_No3,
+			HidNpadIdType_No4
+		};
+
+		for (int i = 0; i < 5; i++) {
+			u32 style = hidGetNpadStyleSet(npad_ids[i]);
+			bool supported = (style & (HidNpadStyleSet_NpadHandheld | HidNpadStyleSet_NpadFullCtrl | HidNpadStyleSet_NpadJoyDual));
+			if (supported) {
+				if (!gyroInitialized[i]) {
+					if (R_SUCCEEDED(hidGetSixAxisSensorHandles(&gyroHandles[i], 1, npad_ids[i], style))) {
+						hidStartSixAxisSensor(gyroHandles[i]);
+						gyroInitialized[i] = true;
+					}
+				}
+				
+				HidSixAxisSensorState state;
+				if (gyroInitialized[i] && hidGetSixAxisSensorStates(gyroHandles[i], &state, 1) > 0) {
+					gyro_accum_x += state.angular_velocity.x;
+					gyro_accum_y += state.angular_velocity.y;
+					has_gyro_input = true;
+					SwitchActiveNpadId = npad_ids[i];
+				}
+			} else {
+				if (gyroInitialized[i]) {
+					hidStopSixAxisSensor(gyroHandles[i]);
+					gyroInitialized[i] = false;
+				}
+			}
+		}
+		
+		if (has_gyro_input) {
+			pad->PCTempJoyState.GyroY = (int16)(gyro_accum_x * -1000.0f);
+			pad->PCTempJoyState.GyroX = (int16)(gyro_accum_y * -1000.0f);
+		}
+#endif
 	}
 
 	_psHandleVibration();

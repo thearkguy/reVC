@@ -26,6 +26,7 @@ public:
 	int16 Square, Triangle, Cross, Circle;
 	int16 LeftShock, RightShock;
 	int16 NetworkTalk;
+	int16 GyroX, GyroY;
 	float GetLeftStickX(void) { return LeftStickX/32767.0f; };
 	float GetLeftStickY(void) { return LeftStickY/32767.0f; };
 	float GetRightStickX(void) { return RightStickX/32767.0f; };
@@ -44,7 +45,7 @@ public:
 			LeftShock || RightShock;
 	}
 };
-VALIDATE_SIZE(CControllerState, 0x2A);
+VALIDATE_SIZE(CControllerState, 0x2E);
 
 class CMouseControllerState
 {
@@ -191,6 +192,9 @@ public:
 	static bool m_bDebugCamPCOn;
 	static bool bHasPlayerCheated;
 	static bool bInvertLook4Pad;
+	static int8 bInvertGyroVertically;
+	static float fGyroSensitivity;
+	static bool IsAimingCameraMode(int16 camMode);
 	
 #ifdef GTA_PC_CONTROLS
 	static CKeyboardState OldKeyState;
@@ -498,7 +502,7 @@ public:
 	static bool IsNoOrObsolete() { return bDisplayNoControllerMessage || bObsoleteControllerMessage; }
 };
 
-VALIDATE_SIZE(CPad, 0xFC);
+VALIDATE_SIZE(CPad, 0x110);
 extern CPad Pads[MAX_PADS];
 
 #endif // __GTA_PAD_H__

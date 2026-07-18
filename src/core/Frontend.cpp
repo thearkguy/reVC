@@ -869,6 +869,9 @@ CMenuManager::DisplayHelperText(char *text)
 				return;
 			}
 
+			if (m_nCurrScreen == MENUPAGE_CONTROLLER_SETTINGS)
+				return;
+
 			CFont::PrintString(SCREEN_STRETCH_FROM_RIGHT(HELPER_TEXT_RIGHT_MARGIN), SCREEN_SCALE_FROM_BOTTOM(HELPER_TEXT_BOTTOM_MARGIN),
 				m_nCurrScreen != MENUPAGE_STATS ? TheText.Get("FET_MIG") : TheText.Get("FEH_SSA"));
 
@@ -5991,7 +5994,11 @@ CMenuManager::PrintController(void)
 	const float CONTROLLER_SIZE_X = 235.2f;
 	const float CONTROLLER_SIZE_Y = 175.2f;
 	const float CONTROLLER_POS_X = (DEFAULT_SCREEN_WIDTH - CONTROLLER_SIZE_X) / 2.0f;
+#ifdef __SWITCH__
+	const float CONTROLLER_POS_Y = 160.0f;
+#else
 	const float CONTROLLER_POS_Y = 220.0f;
+#endif
 
 	float centerX = CONTROLLER_POS_X + CONTROLLER_SIZE_X / 2;
 	float centerY = CONTROLLER_POS_Y + CONTROLLER_SIZE_Y / 2;
@@ -6683,6 +6690,9 @@ CMenuManager::PrintController(void)
 void
 CMenuManager::LoadController(int8 type)
 {
+#ifdef __SWITCH__
+	type = CONTROLLER_NINTENDO_SWITCH;
+#endif
 	switch (type)
 	{
 	case CONTROLLER_DUALSHOCK2:

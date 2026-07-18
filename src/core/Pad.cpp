@@ -64,6 +64,8 @@ bool CPad::m_bMapPadOneToPadTwo;
 bool CPad::m_bDebugCamPCOn;
 bool CPad::bHasPlayerCheated;
 bool CPad::bInvertLook4Pad;
+int8 CPad::bInvertGyroVertically = false;
+float CPad::fGyroSensitivity = 1.0f;
 #ifdef GTA_PS2
 unsigned char act_direct[6];
 unsigned char act_align[6];
@@ -686,6 +688,7 @@ CControllerState::Clear(void)
 	Square = Triangle = Cross = Circle = 0;
 	LeftShock = RightShock = 0;
 	NetworkTalk = 0;
+	GyroX = GyroY = 0;
 }
 
 void CKeyboardState::Clear()
@@ -1038,6 +1041,8 @@ CControllerState CPad::ReconcileTwoControllersInput(CControllerState const &Stat
 	_RECONCILE_BUTTON(DPadDown);
 	_RECONCILE_BUTTON(DPadLeft);
 	_RECONCILE_BUTTON(DPadRight);
+	_RECONCILE_AXIS(GyroX);
+	_RECONCILE_AXIS(GyroY);
 	_FIX_RECON_DIR(DPadUp, DPadDown, LeftStickY);
 	_FIX_RECON_DIR(DPadLeft, DPadRight, LeftStickX);
 
@@ -3327,19 +3332,35 @@ bool CPad::SniperZoomOut(void)
 
 #undef CURMODE
 
+bool CPad::IsAimingCameraMode(int16 camMode)
+{
+	return camMode == CCam::MODE_SNIPER ||
+	       camMode == CCam::MODE_SNIPER_RUNABOUT ||
+	       camMode == CCam::MODE_ROCKETLAUNCHER ||
+	       camMode == CCam::MODE_ROCKETLAUNCHER_RUNABOUT ||
+	       camMode == CCam::MODE_M16_1STPERSON ||
+	       camMode == CCam::MODE_M16_1STPERSON_RUNABOUT ||
+	       camMode == CCam::MODE_HELICANNON_1STPERSON ||
+	       camMode == CCam::MODE_CAMERA;
+}
+
 int16 CPad::SniperModeLookLeftRight(void)
 {
 	int16 axis = NewState.LeftStickX;
 	int16 dpad = (NewState.DPadRight - NewState.DPadLeft) / 2;
+	int16 gyro = (int16)(NewState.GyroX * CPad::fGyroSensitivity);
 
+	int16 retVal = 0;
 	if ( Abs(axis) > Abs(dpad) ) {
 		if ( Abs(axis) > 35.0f ) {
-		  return (axis > 0.f ? axis - 35.f : axis + 35.f) * (128.f / (128 - 35));
+			retVal = (axis > 0.f ? axis - 35.f : axis + 35.f) * (128.f / (128 - 35));
 		} else {
-		  return 0;
+			retVal = 0;
 		}
 	} else
-		return dpad;
+		retVal = dpad;
+
+	return retVal + gyro;
 }
 
 int16 CPad::SniperModeLookUpDown(void)
@@ -3357,19 +3378,32 @@ int16 CPad::SniperModeLookUpDown(void)
 		dpad = (NewState.DPadUp - NewState.DPadDown) / 2;
 	}
 
+	int16 gyro = (int16)(NewState.GyroY * CPad::fGyroSensitivity);
+	if (CPad::bInvertGyroVertically) {
+		gyro = -gyro;
+	}
+
+	int16 retVal = 0;
 	if ( Abs(axis) > Abs(dpad) ) {
 	    if ( Abs(axis) > 35.0f ) {
-	      return (axis > 0.f ? axis - 35.f : axis + 35.f) * (128.f / (128 - 35));
+	      retVal = (axis > 0.f ? axis - 35.f : axis + 35.f) * (128.f / (128 - 35));
 	    } else {
-	      return 0;
+	      retVal = 0;
 	    }
 	} else
-		return dpad;
+		retVal = dpad;
+
+	return retVal + gyro;
 }
 
 int16 CPad::LookAroundLeftRight(void)
 {
 	float axis = GetPad(0)->NewState.RightStickX;
+	int16 gyro = (int16)(NewState.GyroX * CPad::fGyroSensitivity);
+
+	if (IsAimingCameraMode(TheCamera.Cams[TheCamera.ActiveCam].Mode)) {
+		return (int16)axis + gyro;
+	}
 
 	if ( Abs(axis) > 85 && !GetLookBehindForPed() )
 		return (int16) ( (axis + ( ( axis > 0 ) ? -85 : 85) )
@@ -3390,6 +3424,15 @@ int16 CPad::LookAroundUpDown(void)
 #endif
 	if (CPad::bInvertLook4Pad)
 		axis = -axis;
+
+	int16 gyro = (int16)(NewState.GyroY * CPad::fGyroSensitivity);
+	if (CPad::bInvertGyroVertically) {
+		gyro = -gyro;
+	}
+
+	if (IsAimingCameraMode(TheCamera.Cams[TheCamera.ActiveCam].Mode)) {
+		return axis + gyro;
+	}
 
 	if ( Abs(axis) > 85 && !GetLookBehindForPed() )
 		return (int16) ( (axis + ( ( axis > 0 ) ? -85 : 85) )
