@@ -2100,16 +2100,13 @@ void CPad::Update(int16 pad)
 
 void CPad::DoCheats(void)
 {
-#ifdef DETECT_PAD_INPUT_SWITCH
-	if (IsAffectedByController)
-#endif
-		GetPad(0)->DoCheats(0);
+	GetPad(0)->DoCheats(0);
 }
 
 void CPad::DoCheats(int16 unk)
 {
 #if defined(GTA_PS2_STUFF) || defined(GTA_PC_CONTROLS)
-#ifdef GTA_PC_CONTROLS
+#if defined(GTA_PC_CONTROLS) && !defined(__SWITCH__)
 	auto GetJoyButtonJustDownLocal = [](int32 button) -> bool {
 		int32 mapId = -1;
 		switch (button) {
