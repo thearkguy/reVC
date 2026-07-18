@@ -2626,10 +2626,18 @@ void CapturePad(RwInt32 padID)
 
 		for (int i = 0; i < 5; i++) {
 			u32 style = hidGetNpadStyleSet(npad_ids[i]);
-			bool supported = (style & (HidNpadStyleSet_NpadHandheld | HidNpadStyleSet_NpadFullCtrl | HidNpadStyleSet_NpadJoyDual));
+			bool supported = (style & (HidNpadStyleTag_NpadHandheld | HidNpadStyleTag_NpadFullKey | HidNpadStyleTag_NpadJoyDual));
 			if (supported) {
+				HidNpadStyleTag activeTag = HidNpadStyleTag_NpadHandheld;
+				if (style & HidNpadStyleTag_NpadHandheld)
+					activeTag = HidNpadStyleTag_NpadHandheld;
+				else if (style & HidNpadStyleTag_NpadFullKey)
+					activeTag = HidNpadStyleTag_NpadFullKey;
+				else if (style & HidNpadStyleTag_NpadJoyDual)
+					activeTag = HidNpadStyleTag_NpadJoyDual;
+
 				if (!gyroInitialized[i]) {
-					if (R_SUCCEEDED(hidGetSixAxisSensorHandles(&gyroHandles[i], 1, npad_ids[i], style))) {
+					if (R_SUCCEEDED(hidGetSixAxisSensorHandles(&gyroHandles[i], 1, npad_ids[i], activeTag))) {
 						hidStartSixAxisSensor(gyroHandles[i]);
 						gyroInitialized[i] = true;
 					}
